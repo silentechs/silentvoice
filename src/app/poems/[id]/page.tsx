@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/Button";
 import { ZenMode } from "@/components/features/ZenMode";
 import { MysticAnalysis } from "@/components/features/MysticAnalysis";
 import { FeedbackForm } from "@/components/features/FeedbackForm";
+import { ShareModal } from "@/components/features/ShareModal";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Share2, MessageCircle } from "lucide-react";
 
 interface Poem {
     id: string;
@@ -33,6 +35,7 @@ export default function PoemDetailPage() {
     const [poem, setPoem] = useState<Poem | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isShareOpen, setIsShareOpen] = useState(false);
 
     useEffect(() => {
         async function fetchPoem() {
@@ -143,15 +146,33 @@ export default function PoemDetailPage() {
                         <div className="w-20 h-px bg-gold-600/20" />
 
                         <div className="flex gap-4">
-                            <Button variant="ghost" size="sm">Share</Button>
-                            <Button variant="ghost" size="sm">Discuss</Button>
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => setIsShareOpen(true)}
+                                className="flex items-center gap-2"
+                            >
+                                <Share2 size={16} />
+                                Share
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => {
+                                    document.getElementById("resonances")?.scrollIntoView({ behavior: "smooth" });
+                                }}
+                                className="flex items-center gap-2"
+                            >
+                                <MessageCircle size={16} />
+                                Discuss
+                            </Button>
                         </div>
                     </div>
                 </Container>
             </Section>
 
             {/* Feedback Section */}
-            <Section className="border-t border-gold-600/5">
+            <Section id="resonances" className="border-t border-gold-600/5">
                 <Container size="sm">
                     <h3 className="text-2xl font-brand text-slate-100 mb-10 tracking-widest uppercase text-center">Resonances</h3>
 
@@ -178,6 +199,16 @@ export default function PoemDetailPage() {
                     </div>
                 </Container>
             </Section>
+
+            {/* Share Modal */}
+            <ShareModal
+                isOpen={isShareOpen}
+                onClose={() => setIsShareOpen(false)}
+                title={poem.title}
+                author={poem.author.name}
+                url={typeof window !== "undefined" ? window.location.href : ""}
+                excerpt={poem.content.substring(0, 150)}
+            />
 
             <Footer />
         </main>
