@@ -4,10 +4,14 @@ import { Container, Section } from "@/components/ui/Container";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
+import { LogoutButton } from "@/components/admin/LogoutButton";
+import { getAdminUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminPage() {
+export default async function AdminPage() {
+    const user = await getAdminUser();
+
     return (
         <main className="min-h-screen">
             <Navigation />
@@ -29,6 +33,11 @@ export default function AdminPage() {
                         <p className="poetry-text text-lg text-slate-400 max-w-xl mx-auto">
                             "The guardian's chamber, where whispered submissions find their fate."
                         </p>
+                        {user && (
+                            <p className="mt-4 text-sm text-slate-500 font-ui">
+                                Welcome back, <span className="text-gold-600">{user.name}</span>
+                            </p>
+                        )}
                     </div>
 
                     {/* Admin Cards */}
@@ -76,10 +85,11 @@ export default function AdminPage() {
                     </div>
 
                     {/* Quick Actions */}
-                    <div className="mt-16 text-center">
+                    <div className="mt-16 flex items-center justify-center gap-4">
                         <Button variant="ghost" asChild>
                             <Link href="/">← Return to Sanctuary</Link>
                         </Button>
+                        <LogoutButton />
                     </div>
                 </Container>
             </Section>
@@ -88,3 +98,4 @@ export default function AdminPage() {
         </main>
     );
 }
+

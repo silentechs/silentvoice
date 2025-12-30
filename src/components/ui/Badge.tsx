@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 
 interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-    variant?: "pending" | "approved" | "rejected" | "default";
+    variant?: "pending" | "approved" | "rejected" | "suspended" | "default";
 }
 
 export function Badge({ className, variant = "default", ...props }: BadgeProps) {
@@ -12,6 +12,7 @@ export function Badge({ className, variant = "default", ...props }: BadgeProps) 
         pending: "bg-amber-500/10 text-amber-500 border-amber-500/20",
         approved: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
         rejected: "bg-red-500/10 text-red-500 border-red-500/20",
+        suspended: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     };
 
     return (

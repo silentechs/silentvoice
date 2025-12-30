@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import r2, { R2_BUCKET_NAME } from "@/lib/r2";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
-// POST /api/admin/poems/:id/moderate - Approve or reject a poem
+// POST /api/admin/poems/:id/moderate - Approve, reject, suspend, restore, or delete a poem
 export async function POST(request: Request, context: RouteContext) {
     try {
         const { id } = await context.params;
         const { action, rejectionReason } = await request.json();
 
-        if (!action || !["approve", "reject"].includes(action)) {
+        const validActions = ["approve", "reject", "suspend", "restore", "delete"];
+        if (!action || !validActions.includes(action)) {
             return NextResponse.json({ error: "Invalid action" }, { status: 400 });
         }
 
@@ -24,6 +27,61 @@ export async function POST(request: Request, context: RouteContext) {
             return NextResponse.json({ error: "Poem not found" }, { status: 404 });
         }
 
+        // Handle DELETE action
+        if (action === "delete") {
+            // Delete associated image from R2 if it exists
+            if (poem.imageUrl && !poem.imageUrl.startsWith("http")) {
+                try {
+                    await r2.send(
+                        new DeleteObjectCommand({
+                            Bucket: R2_BUCKET_NAME,
+                            Key: poem.imageUrl,
+                        })
+                    );
+                } catch (r2Error) {
+                    console.error("Failed to delete image from R2:", r2Error);
+                    // Continue with poem deletion even if image deletion fails
+                }
+            }
+
+            // Delete all feedback for this poem first (foreign key constraint)
+            await prisma.feedback.deleteMany({
+                where: { poemId: id },
+            });
+
+            // Delete the poem
+            await prisma.poem.delete({
+                where: { id },
+            });
+
+            return NextResponse.json({ success: true, deleted: true });
+        }
+
+        // Handle SUSPEND action
+        if (action === "suspend") {
+            const updatedPoem = await prisma.poem.update({
+                where: { id },
+                data: {
+                    status: "suspended",
+                },
+            });
+
+            return NextResponse.json({ success: true, poem: updatedPoem });
+        }
+
+        // Handle RESTORE action (restore suspended poem back to approved)
+        if (action === "restore") {
+            const updatedPoem = await prisma.poem.update({
+                where: { id },
+                data: {
+                    status: "approved",
+                },
+            });
+
+            return NextResponse.json({ success: true, poem: updatedPoem });
+        }
+
+        // Handle APPROVE action
         if (action === "approve") {
             const updatedPoem = await prisma.poem.update({
                 where: { id },
@@ -53,7 +111,10 @@ export async function POST(request: Request, context: RouteContext) {
             }
 
             return NextResponse.json({ success: true, poem: updatedPoem });
-        } else {
+        }
+
+        // Handle REJECT action
+        if (action === "reject") {
             const updatedPoem = await prisma.poem.update({
                 where: { id },
                 data: {
@@ -82,6 +143,8 @@ export async function POST(request: Request, context: RouteContext) {
 
             return NextResponse.json({ success: true, poem: updatedPoem });
         }
+
+        return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     } catch (error) {
         console.error("POST moderate error:", error);
         return NextResponse.json({ error: "Failed to moderate poem" }, { status: 500 });

@@ -2,6 +2,7 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Container, Section } from "@/components/ui/Container";
 import { Card } from "@/components/ui/Card";
+import { ContactForm } from "@/components/features/ContactForm";
 import Image from "next/image";
 
 export default function AboutPage() {
@@ -70,6 +71,20 @@ export default function AboutPage() {
                                     </p>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Contact Section */}
+                        <div id="contact" className="space-y-8 pt-10 scroll-mt-32">
+                            <div className="text-center">
+                                <h2 className="text-2xl font-brand text-gold-400 tracking-widest uppercase mb-4">
+                                    Get in Touch
+                                </h2>
+                                <p className="text-slate-500 font-ui max-w-md mx-auto">
+                                    Have questions, ideas, or just want to say hello? 
+                                    We'd love to hear from you.
+                                </p>
+                            </div>
+                            <ContactForm />
                         </div>
 
                         <div className="pt-20 text-center border-t border-gold-600/5">

@@ -19,6 +19,7 @@ export function Footer() {
                             <li><Link href="/poems" className="hover:text-gold-400 transition-colors">Poetry Gallery</Link></li>
                             <li><Link href="/about" className="hover:text-gold-400 transition-colors">Our Story</Link></li>
                             <li><Link href="/submit" className="hover:text-gold-400 transition-colors">Submit Work</Link></li>
+                            <li><Link href="/about#contact" className="hover:text-gold-400 transition-colors">Contact Us</Link></li>
                         </ul>
                     </div>
 

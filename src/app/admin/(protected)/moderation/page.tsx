@@ -21,7 +21,7 @@ interface Poem {
     title: string;
     content: string;
     imageUrl: string | null;
-    status: "pending" | "approved" | "rejected";
+    status: "pending" | "approved" | "rejected" | "suspended";
     submittedAt: string;
     approvedAt: string | null;
     rejectionReason: string | null;
@@ -38,21 +38,25 @@ interface PoemsResponse {
     };
 }
 
+type FilterStatus = "pending" | "approved" | "rejected" | "suspended" | "all";
+type ModerateAction = "approve" | "reject" | "suspend" | "restore" | "delete";
+
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function ModerationPage() {
-    const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
+    const [filter, setFilter] = useState<FilterStatus>("pending");
     const [loadingId, setLoadingId] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [rejectionReason, setRejectionReason] = useState("");
     const [showRejectModal, setShowRejectModal] = useState<string | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
 
     const { data, error, isLoading } = useSWR<PoemsResponse>(
         `/api/admin/poems?status=${filter}`,
         fetcher
     );
 
-    const handleModerate = async (poemId: string, action: "approve" | "reject", reason?: string) => {
+    const handleModerate = async (poemId: string, action: ModerateAction, reason?: string) => {
         setLoadingId(poemId);
         try {
             const response = await fetch(`/api/admin/poems/${poemId}/moderate`, {
@@ -62,8 +66,11 @@ export default function ModerationPage() {
             });
 
             if (response.ok) {
+                // Revalidate all filter caches
                 mutate(`/api/admin/poems?status=${filter}`);
+                mutate(`/api/admin/poems?status=all`);
                 setShowRejectModal(null);
+                setShowDeleteModal(null);
                 setRejectionReason("");
             }
         } catch (error) {
@@ -75,6 +82,14 @@ export default function ModerationPage() {
 
     const poems = data?.poems || [];
     const pagination = data?.pagination;
+
+    const getStatusLabel = () => {
+        switch (filter) {
+            case "pending": return "awaiting review";
+            case "suspended": return "suspended poems";
+            default: return `${filter} poems`;
+        }
+    };
 
     return (
         <main className="min-h-screen">
@@ -92,13 +107,13 @@ export default function ModerationPage() {
                                 Poem <span className="text-gold-600">Moderation</span>
                             </h1>
                             <p className="poetry-text text-slate-400 mt-2">
-                                {pagination?.total || 0} {filter === "pending" ? "awaiting review" : `${filter} poems`}
+                                {pagination?.total || 0} {getStatusLabel()}
                             </p>
                         </div>
 
                         {/* Filter Tabs */}
                         <div className="flex gap-2 flex-wrap">
-                            {(["pending", "approved", "rejected", "all"] as const).map((status) => (
+                            {(["pending", "approved", "suspended", "rejected", "all"] as const).map((status) => (
                                 <Button
                                     key={status}
                                     variant={filter === status ? "gold" : "secondary"}
@@ -187,7 +202,7 @@ export default function ModerationPage() {
                                             {/* Poem Excerpt / Full Content */}
                                             <div className="mb-4">
                                                 <p className={`poetry-text text-slate-400 ${expandedId === poem.id ? "" : "line-clamp-3"}`}>
-                                                    "{poem.content}"
+                                                    &quot;{poem.content}&quot;
                                                 </p>
                                                 {poem.content.length > 200 && (
                                                     <button
@@ -208,9 +223,66 @@ export default function ModerationPage() {
                                                 </div>
                                             )}
 
-                                            {/* Actions */}
-                                            {poem.status === "pending" && (
-                                                <div className="flex items-center gap-3">
+                                            {/* Suspended Notice */}
+                                            {poem.status === "suspended" && (
+                                                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-4">
+                                                    <p className="text-amber-400 text-sm font-ui">
+                                                        <strong>⚠ Suspended:</strong> This poem is temporarily hidden from the public gallery.
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {/* Actions based on status */}
+                                            <div className="flex items-center gap-3 flex-wrap">
+                                                {/* Pending: Approve, Reject, Delete */}
+                                                {poem.status === "pending" && (
+                                                    <>
+                                                        <Button
+                                                            variant="gold"
+                                                            size="sm"
+                                                            isLoading={loadingId === poem.id}
+                                                            onClick={() => handleModerate(poem.id, "approve")}
+                                                        >
+                                                            ✓ Approve
+                                                        </Button>
+                                                        <Button
+                                                            variant="secondary"
+                                                            size="sm"
+                                                            className="!border-red-500/50 !text-red-400 hover:!border-red-500"
+                                                            onClick={() => setShowRejectModal(poem.id)}
+                                                        >
+                                                            ✗ Reject
+                                                        </Button>
+                                                    </>
+                                                )}
+
+                                                {/* Approved: Suspend, Delete */}
+                                                {poem.status === "approved" && (
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        className="!border-amber-500/50 !text-amber-400 hover:!border-amber-500"
+                                                        isLoading={loadingId === poem.id}
+                                                        onClick={() => handleModerate(poem.id, "suspend")}
+                                                    >
+                                                        ⏸ Suspend
+                                                    </Button>
+                                                )}
+
+                                                {/* Suspended: Restore, Delete */}
+                                                {poem.status === "suspended" && (
+                                                    <Button
+                                                        variant="gold"
+                                                        size="sm"
+                                                        isLoading={loadingId === poem.id}
+                                                        onClick={() => handleModerate(poem.id, "restore")}
+                                                    >
+                                                        ↻ Restore
+                                                    </Button>
+                                                )}
+
+                                                {/* Rejected: Re-approve, Delete */}
+                                                {poem.status === "rejected" && (
                                                     <Button
                                                         variant="gold"
                                                         size="sm"
@@ -219,22 +291,28 @@ export default function ModerationPage() {
                                                     >
                                                         ✓ Approve
                                                     </Button>
-                                                    <Button
-                                                        variant="secondary"
-                                                        size="sm"
-                                                        className="!border-red-500/50 !text-red-400 hover:!border-red-500"
-                                                        onClick={() => setShowRejectModal(poem.id)}
-                                                    >
-                                                        ✗ Reject
-                                                    </Button>
+                                                )}
+
+                                                {/* Delete button for all statuses */}
+                                                <Button
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    className="!border-red-600/50 !text-red-500 hover:!border-red-600 hover:!bg-red-600/10"
+                                                    onClick={() => setShowDeleteModal(poem.id)}
+                                                >
+                                                    🗑 Delete
+                                                </Button>
+
+                                                {/* View link (only for approved poems) */}
+                                                {poem.status === "approved" && (
                                                     <Link
                                                         href={`/poems/${poem.id}`}
                                                         className="text-slate-500 text-sm font-ui hover:text-gold-600 ml-auto"
                                                     >
                                                         View Full →
                                                     </Link>
-                                                </div>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </CardContent>
@@ -285,7 +363,50 @@ export default function ModerationPage() {
                 </div>
             )}
 
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-obsidian-900/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <Card hover={false} className="w-full max-w-md">
+                        <CardContent>
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-xl font-brand text-slate-100 tracking-wider">Delete Poem</h3>
+                            </div>
+                            <p className="text-slate-400 font-ui text-sm mb-2">
+                                Are you sure you want to permanently delete this poem?
+                            </p>
+                            <p className="text-red-400 font-ui text-xs mb-4">
+                                ⚠ This action cannot be undone. The poem and its associated image will be permanently removed.
+                            </p>
+                            <div className="flex gap-3 mt-4">
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="!border-red-600/50 !text-red-500 !bg-red-600/10"
+                                    isLoading={loadingId === showDeleteModal}
+                                    onClick={() => handleModerate(showDeleteModal, "delete")}
+                                >
+                                    Yes, Delete Forever
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowDeleteModal(null)}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
             <Footer />
         </main>
     );
 }
+

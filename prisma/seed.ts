@@ -1,8 +1,16 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { neonConfig } from "@neondatabase/serverless";
+import bcrypt from "bcryptjs";
+import ws from "ws";
 
-// Prisma 7+ reads DATABASE_URL from prisma.config.ts automatically
-const prisma = new PrismaClient();
+// Configure WebSocket for Neon
+neonConfig.webSocketConstructor = ws;
+
+// Create Prisma client with Neon adapter
+const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 
 const poems = [
     {
@@ -83,8 +91,31 @@ The universe resides inside.`,
 ];
 
 async function seed() {
-    console.log("🌱 Seeding poems into the sanctuary...\n");
+    console.log("🌱 Seeding the sanctuary...\n");
 
+    // Seed founder/admin user
+    const founderEmail = process.env.ADMIN_EMAIL || "mubarick391@gmail.com";
+    const founderPassword = process.env.ADMIN_PASSWORD || "silentvoice2025";
+    const passwordHash = await bcrypt.hash(founderPassword, 12);
+
+    const founder = await prisma.user.upsert({
+        where: { email: founderEmail },
+        update: { 
+            name: "Mubarick Issahaku",
+            passwordHash,
+            isOwner: true,
+        },
+        create: {
+            email: founderEmail,
+            name: "Mubarick Issahaku",
+            passwordHash,
+            isOwner: true,
+        },
+    });
+    console.log(`👑 Founder created: ${founder.name} (${founder.email})`);
+
+    // Seed poems
+    console.log("\n📜 Seeding poems...\n");
     for (const poem of poems) {
         const user = await prisma.user.upsert({
             where: { email: poem.authorEmail },
