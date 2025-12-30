@@ -25,6 +25,14 @@ export const metadata: Metadata = {
   title: "SILENT VOICE | Loud Silence",
   description: "A digital sanctuary where poetry transcends the digital void.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
