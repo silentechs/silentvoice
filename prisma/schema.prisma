@@ -1,0 +1,42 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String     @id @default(cuid())
+  name      String
+  email     String     @unique
+  isOwner   Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  poems     Poem[]
+  feedback  Feedback[]
+}
+
+model Poem {
+  id              String     @id @default(cuid())
+  title           String
+  content         String     @db.Text
+  imageUrl        String?
+  authorId        String
+  status          String     @default("pending") // pending | approved | rejected
+  submittedAt     DateTime   @default(now())
+  approvedAt      DateTime?
+  rejectionReason String?
+  author          User       @relation(fields: [authorId], references: [id])
+  feedback        Feedback[]
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  authorId  String
+  poemId    String
+  createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id])
+  poem      Poem     @relation(fields: [poemId], references: [id])
+}

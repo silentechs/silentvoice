@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Background - Obsidian */
+  --color-obsidian-900: #0F172A;
+  --color-obsidian-800: #1E293B;
+  
+  /* Primary - Deep Violet Shadows */
+  --color-mystic-900: #1E1B4B;
+  --color-mystic-700: #4C1D95;
+  --color-mystic-500: #8B5CF6;
+
+  /* Secondary - Antique Gold */
+  --color-gold-700: #B8860B;
+  --color-gold-600: #D4AF37;
+  --color-gold-400: #FBBF24;
+
+  /* Accent - Mystical Teal */
+  --color-teal-600: #008B8B;
+  --color-teal-500: #20B2AA;
+
+  /* Fonts */
+  --font-brand: var(--font-cinzel);
+  --font-poetry: var(--font-crimson);
+  --font-ui: var(--font-inter);
+
+  /* Custom Transitions */
+  --transition-ethereal: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root {
+  --background: var(--color-obsidian-900);
+  --foreground: #F8FAFC; /* Slate 50 */
+}
+
+@layer base {
+  body {
+    @apply bg-obsidian-900 text-slate-50 font-ui antialiased selection:bg-gold-600/30;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-brand tracking-wider uppercase;
+  }
+
+  .poetry-text {
+    @apply font-poetry italic leading-relaxed;
+  }
+
+  /* Mystical Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-obsidian-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gold-700/30 rounded-full hover:bg-gold-600/50 transition-colors;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-obsidian-800/40 backdrop-blur-md border border-gold-600/10 rounded-xl overflow-hidden;
+  }
+
+  .mystic-glow {
+    @apply relative overflow-hidden;
+  }
+
+  .mystic-glow::after {
+    content: "";
+    @apply absolute inset-0 bg-gradient-to-br from-mystic-500/10 via-transparent to-gold-400/5 opacity-0 transition-opacity duration-500;
+  }
+
+  .mystic-glow:hover::after {
+    @apply opacity-100;
+  }
+}
