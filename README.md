@@ -40,6 +40,24 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Debugging "Why do I see poems when I think the DB is empty?"
+
+In development, you can verify which DB the app is connected to and whether it contains poems:
+
+- `GET /api/debug/db`
+  - Shows a **DATABASE_URL fingerprint** (never the URL itself)
+  - Shows row counts (e.g. `poemsTotal`, `poemsApproved`)
+
+If you see poems when you expected none, the counts above will confirm whether you’re connected to a different DB than you thought.
+
+### Clearing the DB (development only)
+
+To delete **all poems** and **all non-owner users** (keeps the owner account):
+
+```bash
+CONFIRM_DB_CLEAR=YES APP_URL=http://localhost:3001 npm run db:clear
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

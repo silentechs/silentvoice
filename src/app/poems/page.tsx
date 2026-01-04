@@ -4,6 +4,12 @@ import { Container, Section } from "@/components/ui/Container";
 import { PoemCard } from "@/components/PoemCard";
 import prisma from "@/lib/prisma";
 
+// IMPORTANT:
+// This page queries the DB directly. Without this, Next.js may statically optimize
+// the route in production and serve stale HTML even after the DB changes.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface Poem {
     id: string;
     title: string;

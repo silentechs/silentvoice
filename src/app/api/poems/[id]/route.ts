@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { resolvePublicImageUrl } from "@/lib/images";
 
+export const dynamic = "force-dynamic";
+
 interface RouteContext {
     params: Promise<{ id: string }>;
 }
@@ -39,7 +41,14 @@ export async function GET(
             imageUrl: resolvePublicImageUrl(poem.imageUrl),
         };
 
-        return NextResponse.json({ poem: poemWithPublicImage });
+        return NextResponse.json(
+            { poem: poemWithPublicImage },
+            {
+                headers: {
+                    "Cache-Control": "no-store, max-age=0",
+                },
+            }
+        );
     } catch (error) {
         console.error("GET poem error:", error);
         return NextResponse.json({ error: "The spirits are silent" }, { status: 500 });

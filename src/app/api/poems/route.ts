@@ -5,6 +5,9 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { resolvePublicImageUrl } from "@/lib/images";
 import { randomUUID } from "crypto";
 
+// Prevent any platform/framework caching for dynamic DB-backed routes.
+export const dynamic = "force-dynamic";
+
 function extensionFromMimeType(mimeType: string): string | null {
     switch (mimeType) {
         case "image/jpeg":
@@ -44,18 +47,25 @@ export async function GET(request: Request) {
             prisma.poem.count({ where: { status: "approved" } }),
         ]);
 
-        return NextResponse.json({
-            poems: poems.map((poem) => ({
-                ...poem,
-                imageUrl: resolvePublicImageUrl(poem.imageUrl),
-            })),
-            pagination: {
-                page,
-                limit,
-                total,
-                totalPages: Math.ceil(total / limit),
+        return NextResponse.json(
+            {
+                poems: poems.map((poem) => ({
+                    ...poem,
+                    imageUrl: resolvePublicImageUrl(poem.imageUrl),
+                })),
+                pagination: {
+                    page,
+                    limit,
+                    total,
+                    totalPages: Math.ceil(total / limit),
+                },
             },
-        });
+            {
+                headers: {
+                    "Cache-Control": "no-store, max-age=0",
+                },
+            }
+        );
     } catch (error) {
         console.error("GET poems error:", error);
         return NextResponse.json({ error: "Ancient spirits are taking too long to respond." }, { status: 500 });

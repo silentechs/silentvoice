@@ -7,7 +7,8 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:clear": "node scripts/clear-dev-db.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",
